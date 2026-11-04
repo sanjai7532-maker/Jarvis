@@ -1,0 +1,268 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <title>J.A.R.V.I.S. - Just A Rather Very Intelligent System</title>
+    <!-- Google Fonts for Cyberpunk HUD look -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;700&family=Orbitron:wght@400;600;800;900&family=Share+Tech+Mono&display=swap" rel="stylesheet">
+        <!-- PWA & Mobile Meta Tags (Background capability) -->
+    <meta name="theme-color" content="#020813">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <link rel="manifest" href="/manifest.json">
+    <link rel="apple-touch-icon" href="/icons/icon-192.png">
+    <link rel="icon" type="image/x-icon" href="/favicon.ico">
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <!-- Grid overlay to give futuristic HUD mesh lines -->
+    <div class="hud-grid-overlay"></div>
+    <div class="hud-vignette"></div>
+
+    <div class="container">
+        <!-- Header -->
+        <header class="hud-header">
+            <div class="header-left">
+                <span class="hud-brand">J.A.R.V.I.S.</span>
+                <span class="hud-divider">|</span>
+                <span class="hud-title">SYSTEM PROTOCOL 12.08</span>
+            </div>
+            <div class="header-center">
+                <div class="connection-status" id="ws-status">
+                    <span class="status-dot"></span>
+                    <span class="status-text">CONNECTING BACKEND</span>
+                </div>
+                <div class="ai-status" id="ai-status">
+                    <span class="status-dot"></span>
+                    <span class="status-text">AI BRAIN OFFLINE</span>
+                </div>
+            </div>
+            <div class="header-right">
+                <button type="button" class="hud-btn settings-btn" id="open-settings-btn" title="Backend Core & AI Settings">
+                    <svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor">
+                        <path d="M12,15.5A3.5,3.5 0 0,1 8.5,12A3.5,3.5 0 0,1 12,8.5A3.5,3.5 0 0,1 15.5,12A3.5,3.5 0 0,1 12,15.5M19.43,12.97C19.47,12.65 19.5,12.33 19.5,12C19.5,11.67 19.47,11.34 19.43,11L21.54,9.37C21.73,9.22 21.78,8.95 21.66,8.73L19.66,5.27C19.54,5.05 19.27,4.96 19.05,5.05L16.56,6.05C16.04,5.66 15.5,5.32 14.87,5.07L14.5,2.42C14.46,2.18 14.25,2 14,2H10C9.75,2 9.54,2.18 9.5,2.42L9.13,5.07C8.5,5.32 7.96,5.66 7.44,6.05L4.95,5.05C4.73,4.96 4.46,5.05 4.34,5.27L2.34,8.73C2.21,8.95 2.27,9.22 2.46,9.37L4.57,11C4.53,11.34 4.5,11.67 4.5,12C4.5,12.33 4.53,12.65 4.57,12.97L2.46,14.63C2.27,14.78 2.21,15.05 2.34,15.27L4.34,18.73C4.46,18.95 4.73,19.03 4.95,18.95L7.44,17.94C7.96,18.34 8.5,18.68 9.13,18.93L9.5,21.58C9.54,21.82 9.75,22 10,22H14C14.25,22 14.46,21.82 14.5,21.58L14.87,18.93C15.5,18.67 16.04,18.34 16.56,17.94L19.05,18.95C19.27,19.03 19.54,18.95 19.66,18.73L21.66,15.27C21.78,15.05 21.73,14.78 21.54,14.63L19.43,12.97Z"/>
+                    </svg>
+                    <span>CORE SETTINGS</span>
+                </button>
+                <button type="button" class="install-app-btn hidden" id="install-app-btn">Install app</button>
+                <span class="hud-time" id="hud-clock">00:00:00 PM</span>
+            </div>
+        </header>
+
+        <!-- Main Workspace -->
+        <main class="hud-workspace">
+            <!-- Left Panel: Diagnostics -->
+            <section class="hud-panel left-panel">
+                <h2 class="panel-title">SYSTEM DIAGNOSTICS</h2>
+                
+                <div class="diag-card">
+                    <div class="gauge-container">
+                        <svg class="progress-ring" width="100" height="100">
+                            <circle class="progress-ring-bg" stroke="rgba(0, 243, 255, 0.1)" stroke-width="6" fill="transparent" r="40" cx="50" cy="50" />
+                            <circle id="cpu-ring" class="progress-ring-bar" stroke="#00f3ff" stroke-width="6" stroke-linecap="round" fill="transparent" r="40" cx="50" cy="50" />
+                        </svg>
+                        <div class="gauge-value" id="cpu-val">--%</div>
+                    </div>
+                    <div class="diag-info">
+                        <h3>CPU LOADING</h3>
+                        <p id="cpu-sub">Intel Core Logic</p>
+                    </div>
+                </div>
+
+                <div class="diag-card">
+                    <div class="gauge-container">
+                        <svg class="progress-ring" width="100" height="100">
+                            <circle class="progress-ring-bg" stroke="rgba(0, 243, 255, 0.1)" stroke-width="6" fill="transparent" r="40" cx="50" cy="50" />
+                            <circle id="ram-ring" class="progress-ring-bar" stroke="#00f3ff" stroke-width="6" stroke-linecap="round" fill="transparent" r="40" cx="50" cy="50" />
+                        </svg>
+                        <div class="gauge-value" id="ram-val">--%</div>
+                    </div>
+                    <div class="diag-info">
+                        <h3>MEMORY CORE</h3>
+                        <p id="ram-sub">-- GB / -- GB</p>
+                    </div>
+                </div>
+
+                <div class="diag-card">
+                    <div class="gauge-container">
+                        <svg class="progress-ring" width="100" height="100">
+                            <circle class="progress-ring-bg" stroke="rgba(0, 243, 255, 0.1)" stroke-width="6" fill="transparent" r="40" cx="50" cy="50" />
+                            <circle id="disk-ring" class="progress-ring-bar" stroke="#00f3ff" stroke-width="6" stroke-linecap="round" fill="transparent" r="40" cx="50" cy="50" />
+                        </svg>
+                        <div class="gauge-value" id="disk-val">--%</div>
+                    </div>
+                    <div class="diag-info">
+                        <h3>LOCAL STORAGE</h3>
+                        <p>Primary Partition</p>
+                    </div>
+                </div>
+
+                <div class="sys-meta-panel">
+                    <div class="meta-item">
+                        <span class="meta-label">SYSTEM UPTIME</span>
+                        <span class="meta-val" id="uptime-val">--</span>
+                    </div>
+                    <div class="meta-item">
+                        <span class="meta-label">OS POWER BASE</span>
+                        <span class="meta-val">WINDOWS PC</span>
+                    </div>
+                    <div class="meta-item">
+                        <span class="meta-label">SYS RECOGNITION</span>
+                        <span class="meta-val">WEB SPEECH API</span>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Center Panel: The Arc Reactor Core -->
+            <section class="hud-panel center-panel">
+                <div class="arc-container">
+                    <div class="arc-outer-ring"></div>
+                    <div class="arc-inner-ring"></div>
+                    <div class="arc-triangles">
+                        <div class="triangle tri-1"></div>
+                        <div class="triangle tri-2"></div>
+                        <div class="triangle tri-3"></div>
+                    </div>
+                    <div class="arc-core-glow"></div>
+                    <div class="arc-center-dot"></div>
+                </div>
+
+                <div class="reactor-hud-labels">
+                    <div class="hud-label-left">CORE: 100%</div>
+                    <div class="hud-label-right">MODE: VOICE</div>
+                </div>
+
+                <div class="status-container">
+                    <div class="sys-state" id="sys-state">STANDBY</div>
+                    <div class="transcript-preview" id="live-speech">Listening for wake word: "Jarvis"...</div>
+                </div>
+
+                <!-- Canvas Visualizer Waveform -->
+                <div class="visualizer-wrapper">
+                    <canvas id="waveform-canvas" width="400" height="80"></canvas>
+                </div>
+            </section>
+
+            <!-- Right Panel: Communications Log & Console -->
+            <section class="hud-panel right-panel">
+                <h2 class="panel-title">COMMUNICATIONS CONSOLE</h2>
+                
+                <div class="chat-log" id="chat-log">
+                    <div class="chat-msg system">
+                        <span class="msg-sender">[SYS]</span>
+                        <span class="msg-content">Welcome back, Sir. Initializing J.A.R.V.I.S. Core controls...</span>
+                    </div>
+                </div>
+
+                <!-- Live screenshot frame (visible only when screenshot action triggers) -->
+                <div class="screenshot-display-container hidden" id="screenshot-box">
+                    <div class="screenshot-header">
+                        <span>LATEST CAPTURE</span>
+                        <button class="close-screenshot-btn" id="close-screenshot">×</button>
+                    </div>
+                    <img src="" alt="Latest Screenshot" class="screenshot-img" id="screenshot-preview">
+                </div>
+
+                <!-- Settings Controls -->
+                <div class="voice-settings">
+                    <div class="control-row">
+                        <label for="voice-select">VOICE PROFILE</label>
+                        <select id="voice-select">
+                            <option value="">Default System Voice</option>
+                        </select>
+                    </div>
+                    <div class="control-row">
+                        <label for="voice-pitch">SPEED</label>
+                        <input type="range" id="voice-pitch" min="0.5" max="1.5" step="0.1" value="1.0">
+                    </div>
+                </div>
+
+                <!-- Inputs -->
+                <div class="chat-input-bar">
+                    <button class="voice-toggle-btn active" id="mic-toggle-btn" title="Toggle Microphone">
+                        <svg viewBox="0 0 24 24" width="20" height="20">
+                            <path fill="currentColor" d="M12,2A3,3 0 0,1 15,5V11A3,3 0 0,1 12,14A3,3 0 0,1 9,11V5A3,3 0 0,1 12,2M19,11C19,14.53 16.39,17.44 13,17.93V21H11V17.93C7.61,17.44 5,14.53 5,11H7A5,5 0 0,0 12,16A5,5 0 0,0 17,11H19Z" />
+                        </svg>
+                    </button>
+                    <input type="text" id="manual-input" placeholder="Enter manual instructions to core..." autocomplete="off">
+                    <button class="send-btn" id="send-btn">
+                        <svg viewBox="0 0 24 24" width="20" height="20">
+                            <path fill="currentColor" d="M2,21L23,12L2,3V10L17,12L2,14V21Z" />
+                        </svg>
+                    </button>
+                </div>
+            </section>
+        </main>
+    </div>
+
+    <!-- Futuristic HUD Backend & Core Settings Modal -->
+    <div class="hud-modal-overlay hidden" id="settings-modal">
+        <div class="hud-modal">
+            <div class="hud-modal-header">
+                <div class="modal-title-wrap">
+                    <span class="modal-badge">STARK-OS</span>
+                    <h3>CORE & BACKEND LINK CONFIGURATION</h3>
+                </div>
+                <button type="button" class="modal-close-btn" id="close-settings-btn" title="Close">✕</button>
+            </div>
+            
+            <div class="hud-modal-body">
+                <!-- Backend Server Connection -->
+                <div class="settings-group">
+                    <label class="settings-label" for="backend-url-input">
+                        <span>BACKEND SERVER ENDPOINT</span>
+                        <span class="settings-hint">URL of Python FastAPI server</span>
+                    </label>
+                    <div class="input-with-action">
+                        <input type="text" id="backend-url-input" placeholder="http://localhost:8000" autocomplete="off" spellcheck="false">
+                        <button type="button" class="hud-action-btn" id="test-backend-btn">TEST LINK</button>
+                    </div>
+                    <div class="status-indicator-bar" id="backend-status-msg">
+                        <span class="status-dot"></span>
+                        <span class="text">Status: Checking...</span>
+                    </div>
+                </div>
+
+                <!-- Gemini API Key -->
+                <div class="settings-group">
+                    <label class="settings-label" for="gemini-key-input">
+                        <span>AI NEURAL API KEY (GROQ FREE / GEMINI)</span>
+                        <span class="settings-hint">Paste free Groq key (console.groq.com) or Gemini key</span>
+                    </label>
+                    <div class="input-with-action">
+                        <input type="password" id="gemini-key-input" placeholder="gsk_... (Groq Free) or AIzaSy... (Gemini)" autocomplete="off">
+                        <button type="button" class="hud-action-btn" id="save-gemini-btn">APPLY KEY</button>
+                    </div>
+                    <div class="status-indicator-bar" id="gemini-status-msg">
+                        <span class="status-dot"></span>
+                        <span class="text">Local Automation Mode (Ready for voice & system controls)</span>
+                    </div>
+                </div>
+
+                <!-- Quick Terminal Launcher Guide -->
+                <div class="settings-group">
+                    <label class="settings-label">
+                        <span>HOW TO RUN BACKEND SERVER</span>
+                        <span class="settings-hint">Run this on your laptop / terminal</span>
+                    </label>
+                    <div class="code-banner">
+                        <code>python server.py</code>
+                        <span class="banner-or">or double-click</span>
+                        <code>run_jarvis.bat</code>
+                    </div>
+                </div>
+            </div>
+
+            <div class="hud-modal-footer">
+                <button type="button" class="hud-btn modal-apply-btn" id="save-backend-settings-btn">SAVE & CONNECT</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="app.js"></script>
+</body>
+</html>

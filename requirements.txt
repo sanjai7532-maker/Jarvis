@@ -1,0 +1,7 @@
+fastapi
+uvicorn[standard]
+google-genai
+groq
+python-dotenv
+psutil
+pyautogui
