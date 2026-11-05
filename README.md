@@ -63,3 +63,4 @@ Open your browser to: **[http://localhost:8000](http://localhost:8000)**
 
 ## 🔒 Security
 Sensitive credentials (`.env`) are strictly ignored via `.gitignore`. Always keep your API keys confidential.
+

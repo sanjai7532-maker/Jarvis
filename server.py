@@ -129,7 +129,9 @@ You are J.A.R.V.I.S. (Just A Rather Very Intelligent System), Tony Stark's legen
 You are highly intelligent, sophisticated, slightly sarcastic but extremely polite, and speak with a subtle British gentlemanly tone. 
 You address the user as "Sir" or "Ma'am" (default to Sir unless told otherwise). 
 Language Handling:
-- If the user speaks or writes in Tamil (native script or Tanglish like 'vanakkam', 'epdi irukeenga', 'neram enna'), respond in natural, polite Tamil.
+- If the user speaks or writes in Tamil (native script like 'வணக்கம்' or Tanglish like 'vanakkam', 'epdi irukeenga', 'neram enna', 'solu jarvis', 'eppadi irukkiraai'):
+  Always respond in authentic, clear spoken Tamil script (e.g. 'வணக்கம் ஸார், நான் உங்களுக்கு உதவ தயாராக உள்ளேன்.').
+  Using native Tamil script allows the browser's Tamil Text-to-Speech voice to speak the audio accurately and beautifully.
 - If the user speaks in English, respond in British gentlemanly English.
 - If the user switches languages, seamlessly mirror their language.
 Keep your responses concise, clear, and helpful (1-3 sentences), as they will be read aloud. 
@@ -143,13 +145,17 @@ def execute_local_command(command: str) -> Dict[str, Any]:
     """
     cmd = command.lower().strip()
     
-    # Time / Date
-    if any(x in cmd for x in ["what time is it", "tell me the time", "current time"]):
+    # Time / Date (English & Tamil/Tanglish)
+    if any(x in cmd for x in ["what time is it", "tell me the time", "current time", "neram enna", "time enna", "mani enna", "நேரம் என்ன", "மணி என்ன"]):
         current_time = time.strftime("%I:%M %p")
+        if any(x in cmd for x in ["neram enna", "time enna", "mani enna", "நேரம் என்ன", "மணி என்ன"]):
+            return {"executed": True, "response": f"இப்போது நேரம் {current_time}, ஸார்."}
         return {"executed": True, "response": f"It is currently {current_time}, Sir."}
         
-    if any(x in cmd for x in ["what day is it", "today's date", "what is the date", "what is today"]):
+    if any(x in cmd for x in ["what day is it", "today's date", "what is the date", "what is today", "iniku enna naal", "inniku enna date", "இன்று என்ன நாள்", "தேதி என்ன"]):
         current_date = time.strftime("%A, %B %d, %Y")
+        if any(x in cmd for x in ["iniku enna naal", "inniku enna date", "இன்று என்ன நாள்", "தேதி என்ன"]):
+            return {"executed": True, "response": f"இன்று {current_date}, ஸார்."}
         return {"executed": True, "response": f"Today is {current_date}, Sir."}
 
     # System Control

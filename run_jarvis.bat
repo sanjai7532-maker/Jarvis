@@ -13,3 +13,4 @@ start "" cmd /c "ping 127.0.0.1 -n 3 >nul & start http://localhost:8000"
 echo Starting Core FastAPI backend...
 python server.py
 pause
+

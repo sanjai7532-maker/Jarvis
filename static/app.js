@@ -17,6 +17,7 @@ const chatLogEl = document.getElementById("chat-log");
 const manualInputEl = document.getElementById("manual-input");
 const sendBtn = document.getElementById("send-btn");
 const micToggleBtn = document.getElementById("mic-toggle-btn");
+const langSelect = document.getElementById("lang-select");
 const voiceSelect = document.getElementById("voice-select");
 const voicePitch = document.getElementById("voice-pitch");
 const screenshotBox = document.getElementById("screenshot-box");
@@ -219,6 +220,22 @@ function updateUIStats(stats) {
     }
 }
 
+// Language & Voice Utilities
+function isTamilText(text) {
+    if (!text) return false;
+    // Check for Tamil Unicode block U+0B80 - U+0BFF
+    return /[\u0B80-\u0BFF]/.test(text);
+}
+
+function findTamilVoice() {
+    if (!synthesis) return null;
+    const voices = synthesis.getVoices();
+    return voices.find(v => 
+        (v.lang && (v.lang.toLowerCase().startsWith("ta") || v.lang.toLowerCase().includes("ta-in") || v.lang.toLowerCase().includes("ta_in"))) ||
+        (v.name && (v.name.toLowerCase().includes("tamil") || v.name.toLowerCase().includes("valluvar") || v.name.toLowerCase().includes("pallavi")))
+    ) || null;
+}
+
 // Text Speech Synthesis (TTS)
 function initSpeechSynthesis() {
     if (!synthesis) return;
@@ -228,17 +245,22 @@ function initSpeechSynthesis() {
         const voices = synthesis.getVoices();
         voiceSelect.innerHTML = '';
         
-        // Filter English or local systems voices
-        const enVoices = voices.filter(v => v.lang.includes("en") || v.lang.includes("en-"));
-        const list = enVoices.length > 0 ? enVoices : voices;
+        // Filter English, Tamil, and local system voices
+        const filteredVoices = voices.filter(v => 
+            v.lang.toLowerCase().includes("en") || 
+            v.lang.toLowerCase().includes("ta") || 
+            v.name.toLowerCase().includes("tamil")
+        );
+        const list = filteredVoices.length > 0 ? filteredVoices : voices;
         
-        list.forEach((voice, index) => {
+        list.forEach((voice) => {
             const option = document.createElement("option");
             option.value = voice.name;
-            option.textContent = `${voice.name} (${voice.lang})`;
+            const isTamil = voice.lang.toLowerCase().includes("ta") || voice.name.toLowerCase().includes("tamil");
+            option.textContent = `${isTamil ? "🇮🇳 [Tamil] " : ""}${voice.name} (${voice.lang})`;
             
             // Auto-select a nice British voice if available (like Google UK English or Microsoft Hazel)
-            if (voice.name.toLowerCase().includes("uk") || voice.name.toLowerCase().includes("great britain") || voice.name.toLowerCase().includes("hazel") || voice.name.toLowerCase().includes("google uk")) {
+            if (!selectedVoice && (voice.name.toLowerCase().includes("uk") || voice.name.toLowerCase().includes("great britain") || voice.name.toLowerCase().includes("hazel") || voice.name.toLowerCase().includes("google uk"))) {
                 option.selected = true;
                 selectedVoice = voice;
             }
@@ -262,19 +284,37 @@ function initSpeechSynthesis() {
 }
 
 function speakText(text) {
-    if (!synthesis) return;
+    if (!synthesis || !text) return;
     
     // Stop recognition while speaking to avoid J.A.R.V.I.S hearing himself
     if (recognition && isMicActive) {
-        recognition.stop();
+        try { recognition.stop(); } catch (e) {}
     }
     
     // Cancel ongoing speech
     synthesis.cancel();
     
     const utterance = new SpeechSynthesisUtterance(text);
-    if (selectedVoice) {
-        utterance.voice = selectedVoice;
+    const hasTamil = isTamilText(text);
+    const isTamilSelected = langSelect && langSelect.value === "ta-IN";
+    const tamilVoice = findTamilVoice();
+    
+    // If text contains Tamil characters or Tamil is selected, route to Tamil voice
+    if (hasTamil || isTamilSelected) {
+        utterance.lang = "ta-IN";
+        if (tamilVoice) {
+            utterance.voice = tamilVoice;
+            console.log("J.A.R.V.I.S. speaking via Tamil Voice:", tamilVoice.name);
+        } else {
+            console.warn("J.A.R.V.I.S.: No native Tamil voice found. Requesting ta-IN engine.");
+        }
+    } else {
+        if (selectedVoice) {
+            utterance.voice = selectedVoice;
+            utterance.lang = selectedVoice.lang || "en-GB";
+        } else {
+            utterance.lang = "en-GB";
+        }
     }
     
     utterance.rate = parseFloat(voicePitch.value) || 1.0;
@@ -297,6 +337,15 @@ function speakText(text) {
     
     utterance.onerror = (e) => {
         console.error("Speech Synthesis Error:", e);
+        // Fallback: If voice error occurred due to language incompatibility, try default system voice
+        if (e.error === "language-unavailable" || e.error === "voice-unavailable") {
+            try {
+                const fallbackUtterance = new SpeechSynthesisUtterance(text);
+                fallbackUtterance.rate = parseFloat(voicePitch.value) || 1.0;
+                synthesis.speak(fallbackUtterance);
+                return;
+            } catch (err) {}
+        }
         setAppState('STANDBY');
         if (isMicActive && recognition) {
             try { recognition.start(); } catch (err) {}
@@ -320,15 +369,44 @@ function initSpeechRecognition() {
     recognition = new SpeechRecognition();
     recognition.continuous = true;
     recognition.interimResults = true;
-    recognition.lang = 'en-US';
+    
+    function setRecognitionLanguage() {
+        const val = langSelect ? langSelect.value : "auto";
+        if (val === "ta-IN") {
+            recognition.lang = "ta-IN";
+        } else if (val === "en-IN") {
+            recognition.lang = "en-IN";
+        } else if (val === "en-US") {
+            recognition.lang = "en-US";
+        } else {
+            // Auto mode: default to en-IN / bilingual accent which recognizes Tamil & English smoothly
+            recognition.lang = "en-IN";
+        }
+    }
+    setRecognitionLanguage();
+    
+    if (langSelect) {
+        langSelect.addEventListener("change", () => {
+            setRecognitionLanguage();
+            if (isMicActive && appState !== 'SPEAKING') {
+                try {
+                    recognition.stop();
+                } catch (e) {}
+            }
+        });
+    }
     
     let silenceTimeout = null;
     let finalTranscript = "";
+    const wakeWords = [WAKE_WORD, "jarvis", "ஜார்விஸ்", "சார்விஸ்", "ஜாவிஸ்"];
     
     recognition.onstart = () => {
-        console.log("Speech recognition active.");
+        console.log("Speech recognition active with language:", recognition.lang);
         if (appState === 'STANDBY') {
-            liveSpeechEl.textContent = 'Listening for wake word: "Jarvis"...';
+            const isTa = recognition.lang === "ta-IN";
+            liveSpeechEl.textContent = isTa 
+                ? 'காத்திருக்கிறது: "ஜார்விஸ்" என்று அழைக்கவும்...' 
+                : 'Listening for wake word: "Jarvis"...';
         }
     };
     
@@ -368,8 +446,9 @@ function initSpeechRecognition() {
         if (appState === 'STANDBY') {
             liveSpeechEl.textContent = `Hearing: "${fullTranscript}"`;
             
-            // Check for Wake Word
-            if (fullTranscript.includes(WAKE_WORD)) {
+            // Check for Wake Word in English and Tamil
+            const isWake = wakeWords.some(w => fullTranscript.includes(w));
+            if (isWake) {
                 playBeepSound(1400, 0.08);
                 setTimeout(() => playBeepSound(1800, 0.1), 100);
                 
@@ -392,7 +471,13 @@ function initSpeechRecognition() {
             }
         } else if (appState === 'LISTENING') {
             // Display command in progress
-            const commandCandidate = fullTranscript.split(WAKE_WORD).pop().trim();
+            let commandCandidate = fullTranscript;
+            for (const w of wakeWords) {
+                if (commandCandidate.includes(w)) {
+                    commandCandidate = commandCandidate.split(w).pop().trim();
+                    break;
+                }
+            }
             if (commandCandidate) {
                 liveSpeechEl.textContent = `Command: "${commandCandidate}"`;
                 
